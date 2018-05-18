@@ -9,7 +9,67 @@ wwwgroup="www-data"
 
 # Functions
 function usagehint {
-	echo "Usage: omekash (new|rm|clone <origslug>|log|update|plug|unplug <plugin>|theme|untheme <theme>|archive <zipname>|restore <zipname>) <slug> [--branch <branch>] [--repo <repository>] [--url <url>]"
+	if [ -z "$1" ]; then
+		echo "Usage: omekash (new|rm|clone <origslug>|log|update|plug|unplug <plugin>|theme|untheme <theme>|archive <zipname>|restore <zipname>) <slug> [--branch <branch>] [--repo <repository>] [--url <url>]"
+	else
+		case "$1" in
+			"new")
+				echo -e "omekash new <slug>: Set up a new named Omeka instance. You will need to visit http://<server root>/omeka-<slug>/install/install.php to initialize its parameters."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--branch <branch>: Specify the branch to check out Omeka from. Default: master"\
+					"\n--repo <repository>: Specify the repository to check out Omeka from. Default: https://github.com/omeka/Omeka.git"\
+					"\n--url <url>: Use a download URL to a zip or tarball file instead of Git."\
+				;;
+			"rm")
+				echo -e "omekash rm <slug>: Remove the named Omeka instance."\
+				;;
+			"clone")
+				echo -e "omekash clone <oldslug> <newslug>: Make a copy of the named Omeka instance."\
+				;;
+			"log")
+				echo -e "omekash log <slug>: Show the logs of the named Omeka instance."\
+				;;
+			"update")
+				echo -e "omekash update <slug>: Update the named Omeka instance."\
+					"\nNOTE: This command can only be used on Omeka instances created from Git repositories."\
+				;;
+			"plug")
+				echo -e "omekash plug <slug> [--repo <repository>|--url <url>]: Download and add a plugin to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--branch <branch>: Specify the branch to check out the plugin from. Can only be used with --repo. Default: master"\
+					"\n--repo <repository>: Specify the repository to check out the plugin from."\
+					"\n--url <url>: Specify the URL to a zip or tarball file to download the plugin from."\
+				;;
+			"unplug")
+				echo -e "omekash unplug <slug> <plugin-name>: Directly remove a plugin from the named Omeka instance."\
+					"\nWARNING: Make sure to uninstall the plugin first!"\
+				;;
+			"theme")
+				echo -e "omekash theme <slug> [--repo <repository>|--url <url>]: Download and add a theme from the given URL to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--branch <branch>: Specify the branch to check out the theme from. Can only be used with --repo. Default: master"\
+					"\n--repo <repository>: Specify the repository to check out the theme from."\
+					"\n--url <url>: Specify the URL to a zip or tarball file to download the theme from."\
+				;;
+			"untheme")
+				echo -e "omekash untheme <slug> <theme-name>: Directly remove a theme from the named Omeka instance."\
+					"\nWARNING: Make sure that the theme is not currently used!"\
+				;;
+			"archive")
+				echo -e "omekash archive <zipname> <slug>: Save the named Omeka instance and its associated database in the given zip file."\
+				;;
+			"restore")
+				echo -e "omekash restore <zipname> <slug>: Restore the Omeka instance archived in the given zip file (can be a local path or a download URL) to the new name. The new instance can be accessed at http://<server root>/omeka-<slug>."\
+				;;
+			*)
+				echo "Unknown command: $1"
+				usagehint
+				;;
+		esac
+	fi
 	exit 2
 }
 
@@ -27,7 +87,7 @@ function omekanew {
 	repository=$4
 	dbusername=$5
 	dbpassword=$6
-	
+
 	# Stop if the target already exists
 	if [ -d "$targetdir" ]; then
 		>&2 echo "The target directory ${targetdir} already exists. Please remove this installation before continuing."
@@ -52,7 +112,7 @@ function omekanew {
 	>&2 echo "Downloading Omeka..."
 	git clone --branch "$branch" --recursive "$repo" "$targetdir" || fail
 	>&2 echo "Omeka downloaded."
-	
+
 	# Add IIIF Toolkit
 	>&2 echo "Downloading IIIF Toolkit for Omeka..."
 	tmpdir=`mktemp -d`
@@ -62,7 +122,7 @@ function omekanew {
 
 	# Start configuring Omeka
 	>&2 echo -n "Configuring Omeka... "
-	
+
 	# Fill db.ini
 	dbini="${targetdir}/db.ini"
 	: > $dbini
@@ -103,7 +163,7 @@ function omekanew {
 
 	# Set permissions
 	chown -R "${wwwuser}:${wwwgroup}" "$targetdir"
-	
+
 	# Done configuring Omeka
 	>&2 echo "DONE"
 
@@ -122,7 +182,7 @@ function omekarm {
 	slug=$1
 	targetdir=$2
 	dbusername=$3
-	
+
 	# Stop if the target doesn't already exist
 	if [ ! -d "$targetdir" ]; then
 		>&2 echo "The target directory ${targetdir} does not exist. Please ensure that there is an Omeka installation there."
@@ -137,7 +197,7 @@ function omekarm {
 	>&2 echo -n "Clearing MySQL database and user... "
 	mysql -u "$rootuser" --password="$rootpass" < $sqlfile || fail
 	>&2 echo "DONE"
-	
+
 	# Blow up the directory
 	>&2 echo -n "Removing installation directory... "
 	rm -Rf $targetdir || fail
@@ -161,19 +221,19 @@ function omekaclone {
 	targetdir=$6
 	dbusername=$7
 	dbpassword=$8
-	
+
 	# Stop if the target already exists
 	if [ -d "$targetdir" ]; then
 		>&2 echo "The target directory ${targetdir} already exists. Please remove this installation before continuing."
 		fail
 	fi
-	
+
 	# Stop if the original doesn't already exist
 	if [ ! -d "$origdir" ]; then
 		>&2 echo "The source directory ${origdir} does not exist. Please ensure that there is an Omeka installation there."
 		fail
 	fi
-	
+
 	# Create commands for generating database user
 	sqlfile=`mktemp`
 	echo "CREATE DATABASE omeka_${slug};" >> $sqlfile
@@ -182,23 +242,23 @@ function omekaclone {
 	echo "GRANT ALL ON omeka_${slug}.* TO ${dbusername};" >> $sqlfile
 	echo "GRANT ALL ON omeka_${slug}_test.* TO ${dbusername};" >> $sqlfile
 	echo "FLUSH PRIVILEGES;" >> $sqlfile
-	
+
 	# Run MySQL commands
 	>&2 echo -n "Creating new MySQL database and user... "
 	mysql -u "$rootuser" --password="$rootpass" < $sqlfile || fail
 	>&2 echo "DONE"
-	
+
 	# Dump and reimport
 	>&2 echo -n "Copying MySQL databases... "
 	mysqldump "omeka_${origslug}" -u "$rootuser" --password="$rootpass" | mysql "omeka_${slug}" -u "$rootuser" --password="$rootpass" || fail
 	mysqldump "omeka_${origslug}_test" -u "$rootuser" --password="$rootpass" | mysql "omeka_${slug}_test" -u "$rootuser" --password="$rootpass" || fail
 	>&2 echo "DONE"
-	
+
 	# Copy directories
 	>&2 echo -n "Copying Omeka Installation... "
 	cp -Rf $origdir $targetdir || fail
 	>&2 echo "DONE"
-	
+
 	# Start configuring Omeka
 	>&2 echo -n "Reconfiguring Omeka... "
 
@@ -241,7 +301,7 @@ function omekaclone {
 	echo 'log.errors=0' >> $testsconfig
 	echo 'jobs.dispatcher.default="Omeka_Job_Dispatcher_Adapter_Synchronous"' >> $testsconfig
 	echo 'locale=""' >> $testsconfig
-	
+
 	# Done configuring Omeka
 	>&2 echo "DONE"
 
@@ -385,7 +445,7 @@ function omekarestore {
 
 	# Set permissions
 	chown -R "${wwwuser}:${wwwgroup}" "$targetdir"
-	
+
 	# Remove temporary
 	>&2 echo -n "Cleaning up... "
 	rm -Rf "$tempdir"
@@ -438,9 +498,13 @@ function extractto {
 }
 
 # Capture required parameters
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
 	usagehint
 fi
+if [ -z "$2" ]; then
+	usagehint "$1"
+fi
+
 command=$0
 verb=$1
 case $verb in
@@ -454,7 +518,7 @@ case $verb in
 		;;
 	"clone")
 		if [ -z "$3" ]; then
-			usagehint
+			usagehint "clone"
 		fi
 		origslug=$2
 		slug=$3
@@ -475,7 +539,7 @@ case $verb in
 		;;
 	"unplug")
 		if [ -z "$3" ]; then
-			usagehint
+			usagehint "unplug"
 		fi
 		slug=$3
 		plugslug=$2
@@ -488,7 +552,7 @@ case $verb in
 		;;
 	"untheme")
 		if [ -z "$3" ]; then
-			usagehint
+			usagehint "untheme"
 		fi
 		slug=$3
 		themeslug=$2
@@ -497,7 +561,7 @@ case $verb in
 		;;
 	"archive")
 		if [ -z "$3" ]; then
-			usagehint
+			usagehint "archive"
 		fi
 		slug=$3
 		zipname=$2
@@ -506,7 +570,7 @@ case $verb in
 		;;
 	"restore")
 		if [ -z "$3" ]; then
-			usagehint
+			usagehint "restore"
 		fi
 		slug=$3
 		zipname=$2
@@ -537,21 +601,21 @@ do
 		"--branch")
 			shift
 			if [ -z "$1" ]; then
-				usagehint
+				usagehint $verb
 			fi
 			branch=$1
 			;;
 		"--repo")
 			shift
 			if [ -z "$1" ]; then
-				usagehint
+				usagehint $verb
 			fi
 			repo=$1
 			;;
 		"--url")
 			shift
 			if [ -z "$1" ]; then
-				usagehint
+				usagehint $verb
 			fi
 			url=$1
 			;;
