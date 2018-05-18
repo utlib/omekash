@@ -1,0 +1,6 @@
+# Configurations and hooks
+omekash-config
+omekash-before
+omekash-before-*
+omekash-after
+omekash-after-*

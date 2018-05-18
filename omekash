@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Configurations
+# Configurations: Accessible from hooks and can be overwritten by omeka-overrides
 rootuser="root"
-rootpass="password"
+rootpass="root"
 httproot="/var/www/html"
 wwwuser="www-data"
 wwwgroup="www-data"
@@ -10,7 +10,7 @@ wwwgroup="www-data"
 # Functions
 function usagehint {
 	if [ -z "$1" ]; then
-		echo "Usage: omekash (new|rm|clone <origslug>|log|update|plug|unplug <plugin>|theme|untheme <theme>|archive <zipname>|restore <zipname>) <slug> [--branch <branch>] [--repo <repository>] [--url <url>]"
+		echo "Usage: omekash (new|rm|clone <origslug>|log|update|plug|unplug <plugin>|theme|untheme <theme>|archive <zipname>|restore <zipname>) <slug> [--vanilla] [--branch <branch>] [--repo <repository>] [--url <url>]"
 	else
 		case "$1" in
 			"new")
@@ -20,19 +20,32 @@ function usagehint {
 					"\n--branch <branch>: Specify the branch to check out Omeka from. Default: master"\
 					"\n--repo <repository>: Specify the repository to check out Omeka from. Default: https://github.com/omeka/Omeka.git"\
 					"\n--url <url>: Use a download URL to a zip or tarball file instead of Git."\
+					"\n--vanilla: Skip the preconfigured omekash-after-new hook (if applicable)."\
 				;;
 			"rm")
 				echo -e "omekash rm <slug>: Remove the named Omeka instance."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-rm hook (if applicable)."\
 				;;
 			"clone")
 				echo -e "omekash clone <oldslug> <newslug>: Make a copy of the named Omeka instance."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-clone hook (if applicable)."\
 				;;
 			"log")
 				echo -e "omekash log <slug>: Show the logs of the named Omeka instance."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-log hook (if applicable)."\
 				;;
 			"update")
 				echo -e "omekash update <slug>: Update the named Omeka instance."\
 					"\nNOTE: This command can only be used on Omeka instances created from Git repositories."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-update hook (if applicable)."\
 				;;
 			"plug")
 				echo -e "omekash plug <slug> [--repo <repository>|--url <url>]: Download and add a plugin to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
@@ -41,10 +54,14 @@ function usagehint {
 					"\n--branch <branch>: Specify the branch to check out the plugin from. Can only be used with --repo. Default: master"\
 					"\n--repo <repository>: Specify the repository to check out the plugin from."\
 					"\n--url <url>: Specify the URL to a zip or tarball file to download the plugin from."\
+					"\n--vanilla: Skip the preconfigured omekash-after-plug hook (if applicable)."\
 				;;
 			"unplug")
 				echo -e "omekash unplug <slug> <plugin-name>: Directly remove a plugin from the named Omeka instance."\
 					"\nWARNING: Make sure to uninstall the plugin first!"\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-unplug hook (if applicable)."\
 				;;
 			"theme")
 				echo -e "omekash theme <slug> [--repo <repository>|--url <url>]: Download and add a theme from the given URL to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
@@ -53,16 +70,26 @@ function usagehint {
 					"\n--branch <branch>: Specify the branch to check out the theme from. Can only be used with --repo. Default: master"\
 					"\n--repo <repository>: Specify the repository to check out the theme from."\
 					"\n--url <url>: Specify the URL to a zip or tarball file to download the theme from."\
+					"\n--vanilla: Skip the preconfigured omekash-after-theme hook (if applicable)."\
 				;;
 			"untheme")
 				echo -e "omekash untheme <slug> <theme-name>: Directly remove a theme from the named Omeka instance."\
 					"\nWARNING: Make sure that the theme is not currently used!"\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-untheme hook (if applicable)."\
 				;;
 			"archive")
 				echo -e "omekash archive <zipname> <slug>: Save the named Omeka instance and its associated database in the given zip file."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-archive hook (if applicable)."\
 				;;
 			"restore")
 				echo -e "omekash restore <zipname> <slug>: Restore the Omeka instance archived in the given zip file (can be a local path or a download URL) to the new name. The new instance can be accessed at http://<server root>/omeka-<slug>."\
+					"\n"\
+					"\nAdditional parameters:"\
+					"\n--vanilla: Skip the preconfigured omekash-after-restore hook (if applicable)."\
 				;;
 			*)
 				echo "Unknown command: $1"
@@ -113,13 +140,6 @@ function omekanew {
 	git clone --branch "$branch" --recursive "$repo" "$targetdir" || fail
 	>&2 echo "Omeka downloaded."
 
-	# Add IIIF Toolkit
-	>&2 echo "Downloading IIIF Toolkit for Omeka..."
-	tmpdir=`mktemp -d`
-	git clone https://github.com/utlib/IiifItems.git --recursive "$tmpdir/IiifItems"
-	mv -f "$tmpdir/IiifItems" "$targetdir/plugins"
-	rm -Rf "$tmpdir"
-
 	# Start configuring Omeka
 	>&2 echo -n "Configuring Omeka... "
 
@@ -162,7 +182,7 @@ function omekanew {
 	echo 'locale=""' >> $testsconfig
 
 	# Set permissions
-	chown -R "${wwwuser}:${wwwgroup}" "$targetdir"
+	chown -R "${wwwuser}:${wwwgroup}" "$targetdir" || fail
 
 	# Done configuring Omeka
 	>&2 echo "DONE"
@@ -505,6 +525,7 @@ if [ -z "$2" ]; then
 	usagehint "$1"
 fi
 
+# Capture the call to this script (command) and the verb used (verb). Accessible from hooks.
 command=$0
 verb=$1
 case $verb in
@@ -582,7 +603,7 @@ case $verb in
 		;;
 esac
 
-# Derived parameter defaults
+# Derived parameter defaults: Accessible from hooks
 origdir="${httproot}/omeka-${origslug}"
 origuser="omeka${origslug}"
 origpass="omeka${origslug}root1108"
@@ -592,6 +613,12 @@ dbpass="omeka${slug}root1108"
 branch="master"
 repo="https://github.com/omeka/Omeka.git"
 url=""
+vanilla=""
+
+# (optional) Override configurations and derived parameter defaults
+if [ -f "`dirname "$command"`/omekash-config" ]; then
+	source "`dirname "$command"`/omekash-config"
+fi
 
 # Capture optional parameters
 while [ ! -z "$2" ]
@@ -619,19 +646,31 @@ do
 			fi
 			url=$1
 			;;
+		"--vanilla")
+			shift
+			vanilla=1
+			;;
 	esac
 done
+
+# Before-action hooks
+if [ -f "`dirname "$command"`/omekash-before" ] && [ -z $vanilla ]; then
+	source "`dirname "$command"`/omekash-before"
+fi
+if [ -f "`dirname "$command"`/omekash-before-$verb" ] && [ -z $vanilla ]; then
+	source "`dirname "$command"`/omekash-before-$verb"
+fi
 
 # Run the right command
 case $verb in
 	"new")
-		omekanew $slug $targetdir $branch $repo $dbuser $dbpass
+		omekanew "$slug" "$targetdir" "$branch" "$repo" "$dbuser" "$dbpass"
 		;;
 	"rm")
-		omekarm $slug $targetdir $dbuser
+		omekarm "$slug" "$targetdir" "$dbuser"
 		;;
 	"clone")
-		omekaclone $origslug $origdir $origuser $origpass $slug $targetdir $dbuser $dbpass
+		omekaclone "$origslug" "$origdir" "$origuser" "$origpass" "$slug" "$targetdir" "$dbuser" "$dbpass"
 		;;
 	"log")
 		tail -f "$targetdir/application/logs/errors.log"
@@ -650,8 +689,10 @@ case $verb in
 			popd > /dev/null
 		else
 			echo "You must specify a plugin download URL in a --url parameter, or a repository in a --repo parameter."
-			exit 2
 			failed=1
+		fi
+		if [ ! -z "$failed" ]; then
+			exit 2
 		fi
 		;;
 	"unplug")
@@ -682,3 +723,12 @@ case $verb in
 		omekarestore "$slug" "$targetdir" "$zipname" "$dbuser" "$dbpass"
 		;;
 esac
+
+# After-action hooks
+# NOTE: These don't run if the command fails!
+if [ -f "`dirname "$command"`/omekash-after-$verb" ] && [ -z $vanilla ]; then
+	source "`dirname "$command"`/omekash-after-$verb"
+fi
+if [ -f "`dirname "$command"`/omekash-after" ] && [ -z $vanilla ]; then
+	source "`dirname "$command"`/omekash-after"
+fi
