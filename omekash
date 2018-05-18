@@ -10,11 +10,11 @@ wwwgroup="www-data"
 # Functions
 function usagehint {
 	if [ -z "$1" ]; then
-		echo "Usage: omekash (new|rm|clone <origslug>|log|update|plug|unplug <plugin>|theme|untheme <theme>|archive <zipname>|restore <zipname>) <slug> [--vanilla] [--branch <branch>] [--repo <repository>] [--url <url>]"
+		>&2 echo "Usage: omekash (new|rm|clone <origslug>|log|update|plug|unplug <plugin>|theme|untheme <theme>|archive <zipname>|restore <zipname>) <slug> [--vanilla] [--branch <branch>] [--repo <repository>] [--url <url>]"
 	else
 		case "$1" in
 			"new")
-				echo -e "omekash new <slug>: Set up a new named Omeka instance. You will need to visit http://<server root>/omeka-<slug>/install/install.php to initialize its parameters."\
+				>&2 echo -e "omekash new <slug>: Set up a new named Omeka instance. You will need to visit http://<server root>/omeka-<slug>/install/install.php to initialize its parameters."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--branch <branch>: Specify the branch to check out Omeka from. Default: master"\
@@ -23,32 +23,32 @@ function usagehint {
 					"\n--vanilla: Skip the preconfigured omekash-after-new hook (if applicable)."\
 				;;
 			"rm")
-				echo -e "omekash rm <slug>: Remove the named Omeka instance."\
+				>&2 echo -e "omekash rm <slug>: Remove the named Omeka instance."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-rm hook (if applicable)."\
 				;;
 			"clone")
-				echo -e "omekash clone <oldslug> <newslug>: Make a copy of the named Omeka instance."\
+				>&2 echo -e "omekash clone <oldslug> <newslug>: Make a copy of the named Omeka instance."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-clone hook (if applicable)."\
 				;;
 			"log")
-				echo -e "omekash log <slug>: Show the logs of the named Omeka instance."\
+				>&2 echo -e "omekash log <slug>: Show the logs of the named Omeka instance."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-log hook (if applicable)."\
 				;;
 			"update")
-				echo -e "omekash update <slug>: Update the named Omeka instance."\
+				>&2 echo -e "omekash update <slug>: Update the named Omeka instance."\
 					"\nNOTE: This command can only be used on Omeka instances created from Git repositories."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-update hook (if applicable)."\
 				;;
 			"plug")
-				echo -e "omekash plug <slug> [--repo <repository>|--url <url>]: Download and add a plugin to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
+				>&2 echo -e "omekash plug <slug> [--repo <repository>|--url <url>]: Download and add a plugin to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--branch <branch>: Specify the branch to check out the plugin from. Can only be used with --repo. Default: master"\
@@ -57,14 +57,14 @@ function usagehint {
 					"\n--vanilla: Skip the preconfigured omekash-after-plug hook (if applicable)."\
 				;;
 			"unplug")
-				echo -e "omekash unplug <slug> <plugin-name>: Directly remove a plugin from the named Omeka instance."\
+				>&2 echo -e "omekash unplug <plugin-name> <slug>: Directly remove a plugin from the named Omeka instance."\
 					"\nWARNING: Make sure to uninstall the plugin first!"\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-unplug hook (if applicable)."\
 				;;
 			"theme")
-				echo -e "omekash theme <slug> [--repo <repository>|--url <url>]: Download and add a theme from the given URL to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
+				>&2 echo -e "omekash theme <slug> [--repo <repository>|--url <url>]: Download and add a theme from the given URL to the named Omeka instance. You must provide either a --repo or --url parameter, but not both."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--branch <branch>: Specify the branch to check out the theme from. Can only be used with --repo. Default: master"\
@@ -73,26 +73,26 @@ function usagehint {
 					"\n--vanilla: Skip the preconfigured omekash-after-theme hook (if applicable)."\
 				;;
 			"untheme")
-				echo -e "omekash untheme <slug> <theme-name>: Directly remove a theme from the named Omeka instance."\
+				>&2 echo -e "omekash untheme <theme-name> <slug>: Directly remove a theme from the named Omeka instance."\
 					"\nWARNING: Make sure that the theme is not currently used!"\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-untheme hook (if applicable)."\
 				;;
 			"archive")
-				echo -e "omekash archive <zipname> <slug>: Save the named Omeka instance and its associated database in the given zip file."\
+				>&2 echo -e "omekash archive <zipname> <slug>: Save the named Omeka instance and its associated database in the given zip file."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-archive hook (if applicable)."\
 				;;
 			"restore")
-				echo -e "omekash restore <zipname> <slug>: Restore the Omeka instance archived in the given zip file (can be a local path or a download URL) to the new name. The new instance can be accessed at http://<server root>/omeka-<slug>."\
+				>&2 echo -e "omekash restore <zipname> <slug>: Restore the Omeka instance archived in the given zip file (can be a local path or a download URL) to the new name. The new instance can be accessed at http://<server root>/omeka-<slug>."\
 					"\n"\
 					"\nAdditional parameters:"\
 					"\n--vanilla: Skip the preconfigured omekash-after-restore hook (if applicable)."\
 				;;
 			*)
-				echo "Unknown command: $1"
+				>&2 echo "Unknown command: $1"
 				usagehint
 				;;
 		esac
@@ -137,7 +137,7 @@ function omekanew {
 
 	# Clone Omeka to target directory
 	>&2 echo "Downloading Omeka..."
-	git clone --branch "$branch" --recursive "$repo" "$targetdir" || fail
+	git clone -q --branch "$branch" --recursive "$repo" "$targetdir" || fail
 	>&2 echo "Omeka downloaded."
 
 	# Start configuring Omeka
@@ -279,7 +279,7 @@ function omekaclone {
 
 	# Copy directories
 	>&2 echo -n "Copying Omeka Installation... "
-	cp -Rf $origdir $targetdir || fail
+	cp -Rfp $origdir $targetdir || fail
 	>&2 echo "DONE"
 
 	# Start configuring Omeka
@@ -493,7 +493,7 @@ function extractto {
 		fname=`mktemp`
 		rm -f "$fname"
 		fromlocal=0
-		wget -O "$fname" "$source"
+		wget -q -O "$fname" "$source"
 	# Otherwise, reference the local file directly
 	else
 		fname="$source"
@@ -503,13 +503,13 @@ function extractto {
 	extension="${source##*.}"
 	case "$extension" in
 		"zip")
-			unzip "$fname" -d "$target" || failed=1
+			unzip -qq "$fname" -d "$target" || failed=1
 			;;
 		"tgz")
-			tar -xvzf "$fname" -C "$target" || failed=1
+			tar -xzf "$fname" -C "$target" || failed=1
 			;;
 		"tar")
-			tar -xvf "$fname" -C "$target" || failed=1
+			tar -xf "$fname" -C "$target" || failed=1
 			;;
 		*)
 			echo "Unsupported extension \"$extension\". Expected zip, tgz or tar."
@@ -686,7 +686,7 @@ case $verb in
 		;;
 	"update")
 		pushd "$targetdir" >/dev/null 2>&1
-		git pull
+		git pull -q
 		popd >/dev/null 2>&1
 		;;
 	"plug")
@@ -694,10 +694,10 @@ case $verb in
 			extractto "$url" "$targetdir/plugins"
 		elif [ ! -z "$repo" ]; then
 			pushd "$targetdir/plugins" > /dev/null
-			git clone "$repo" --branch "$branch" --recursive
+			git clone -q "$repo" --branch "$branch" --recursive
 			popd > /dev/null
 		else
-			echo "You must specify a plugin download URL in a --url parameter, or a repository in a --repo parameter."
+			>&2 echo "You must specify a plugin download URL in a --url parameter, or a repository in a --repo parameter."
 			failed=1
 		fi
 		if [ ! -z "$failed" ]; then
@@ -712,10 +712,10 @@ case $verb in
 			extractto "$url" "$targetdir/themes"
 		elif [ ! -z "$repo" ]; then
 			pushd "$targetdir/plugins" > /dev/null
-			git clone "$repo" --branch "$branch" --recursive
+			git clone -q "$repo" --branch "$branch" --recursive
 			popd > /dev/null
 		else
-			echo "You must specify a theme download URL in a --url parameter, or a repository in a --repo parameter."
+			>&2 echo "You must specify a theme download URL in a --url parameter, or a repository in a --repo parameter."
 			failed=1
 		fi
 		if [ ! -z "$failed" ]; then
