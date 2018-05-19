@@ -30,7 +30,7 @@ Simply copy `omekash` to `/opt`. Make sure that its execute permission is enable
 ## Configurations
 
 - `rootuser`: The name of the root user in MySQL. Required for setting up new instances. Default: `root`
-- `rootpassword`: The password of the root user in MySQL. Required for setting up new instances. Default: `root`
+- `rootpass`: The password of the root user in MySQL. Required for setting up new instances. Default: `root`
 - `httproot`: The path to the root directory from which Apache serves. Default: `/var/www/html`
 - `wwwuser`: The user name that Apache runs as. Default: `www-data`
 - `wwwgroup`: The group name that Apache runs as. Default: `www-data`
